@@ -125,6 +125,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c8922a122775134da94b350f3854d3b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NewMonoBehaviourScript
+  ID: 12
   xplus: 0
   zplus: 1
   xless: 0
