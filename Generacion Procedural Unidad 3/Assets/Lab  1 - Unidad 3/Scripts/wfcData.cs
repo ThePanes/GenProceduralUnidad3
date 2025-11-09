@@ -10,4 +10,6 @@ public class wfcData : MonoBehaviour
     public int xless;
     public int zless;
 
+
+
 }

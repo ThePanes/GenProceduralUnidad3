@@ -1,9 +1,16 @@
-ï»¿using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 
-public class WFC : MonoBehaviour
+public class Lab3 : MonoBehaviour
 {
+
+    //matriz de lectura
+    public List<List<int>> matriz = new List<List<int>>();
+
+    //offsets de la primera matriz 
+    public float offsetX = 0f;
+    public float offsetY = 0f;
+
     [Header("Prefabs con TileInfo")]
     public GameObject[] prefabs; // cada prefab tiene un TileInfo
     public int width = 10;
@@ -14,6 +21,11 @@ public class WFC : MonoBehaviour
 
     void Start()
     {
+
+        LeerArchivo("matriz");
+        GenerarMapa();
+
+
         possibilities = new List<GameObject>[width, height];
         placedTiles = new GameObject[width, height];
 
@@ -30,13 +42,13 @@ public class WFC : MonoBehaviour
     {
         while (true)
         {
-            // Buscar la celda con menor entropÃ­a (menos opciones)
+            // Buscar la celda con menor entropía (menos opciones)
             Vector2Int pos = GetCellWithLowestEntropy();
             if (pos.x == -1) yield break; // terminado
 
             // Escoger un prefab al azar
             GameObject chosenPrefab = possibilities[pos.x, pos.y][Random.Range(0, possibilities[pos.x, pos.y].Count)]; //escoge entre la posibles soluciones
-            wfcData chosenInfo = chosenPrefab.GetComponent<wfcData>(); 
+            wfcData chosenInfo = chosenPrefab.GetComponent<wfcData>();
 
             // Instanciarlo en la escena
             Vector3 position = new Vector3(pos.x, 0, pos.y);
@@ -108,10 +120,87 @@ public class WFC : MonoBehaviour
             possibilities[nx, nz] = valid;
             if (valid.Count == 1)
             {
-                // Si el vecino colapsÃ³ a una sola opciÃ³n, seguimos propagando
+                // Si el vecino colapsó a una sola opción, seguimos propagando
                 var chosenInfo = valid[0].GetComponent<wfcData>();
                 Propagate(nx, nz, chosenInfo);
             }
         }
     }
+
+
+
+
+
+    ///Temas de lectura
+    void LeerArchivo(string nombreArchivo)
+    {
+        // Cargar el texto desde Resources
+        TextAsset archivo = Resources.Load<TextAsset>(nombreArchivo);
+
+        if (archivo == null)
+        {
+            Debug.LogError("No se encontró el archivo " + nombreArchivo);
+            return;
+        }
+
+        // Dividir el texto en líneas
+        string[] lineas = archivo.text.Split('\n');
+
+        foreach (string linea in lineas)
+        {
+            if (string.IsNullOrWhiteSpace(linea)) continue; // ignorar líneas vacías
+
+            // Separar los valores por espacio
+            string[] valores = linea.Trim().Split(' ');
+
+            // Convertir a int y guardar en una lista
+            List<int> fila = new List<int>();
+            foreach (string v in valores)
+            {
+                if (int.TryParse(v, out int numero))
+                    fila.Add(numero);
+            }
+
+            matriz.Add(fila);
+        }
+    }
+
+    void GenerarMapa()
+    {
+        for (int y = 0; y < matriz.Count; y++)
+        {
+            for (int x = 0; x < matriz[y].Count; x++)
+            {
+                int idBuscada = matriz[y][x];
+
+                // Buscar prefab que tenga ese ID
+                GameObject prefab = BuscarPrefabPorID(idBuscada);
+                if (prefab == null)
+                {
+                    Debug.LogWarning($"No se encontró prefab con ID {idBuscada} en posición [{x},{y}]");
+                    continue;
+                }
+
+                Vector3 posicion = new Vector3((x * 1f) + offsetX, 0, (-y * 1f) + offsetY);
+                Instantiate(prefab, posicion, prefab.transform.rotation, transform);
+            }
+        }
+
+        Debug.Log("Mapa generado correctamente");
+    }
+
+    GameObject BuscarPrefabPorID(int id)
+    {
+        foreach (GameObject obj in prefabs)
+        {
+            if (obj == null) continue;
+
+            wfcData data = obj.GetComponent<wfcData>();
+            if (data != null && data.ID == id)
+                return obj;
+        }
+        return null;
+    }
+
+
 }
