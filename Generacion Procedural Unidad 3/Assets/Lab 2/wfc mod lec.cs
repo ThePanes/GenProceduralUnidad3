@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,29 +14,6 @@ public class wfcmodlec : MonoBehaviour
 
     void Start()
     {
-        // Carga el archivo como TextAsset
-        TextAsset txt = Resources.Load<TextAsset>("matriz");
-
-        // Divide por líneas
-        string[] lineas = txt.text.Split('\n');
-
-        // Determina tamaño
-        int filas = lineas.Length;
-        int columnas = lineas[0].Trim().Split(' ').Length;
-
-        // Crea la matriz
-        int[,] matriz = new int[filas, columnas];
-
-        for (int i = 0; i < filas; i++)
-        {
-            string[] valores = lineas[i].Trim().Split(' ');
-            for (int j = 0; j < columnas; j++)
-            {
-                matriz[i, j] = int.Parse(valores[j]);
-            }
-        }
-
-
         possibilities = new List<GameObject>[width, height];
         placedTiles = new GameObject[width, height];
 
@@ -136,4 +114,4 @@ public class wfcmodlec : MonoBehaviour
             }
         }
     }
-}
+} 
