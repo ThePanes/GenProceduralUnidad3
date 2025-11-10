@@ -590,24 +590,15 @@ MonoBehaviour:
   offsetX: -15
   offsetY: 10
   prefabs:
-  - {fileID: 2909503943769829434, guid: 491904b2e72f81044b99a90ca4cf37c5, type: 3}
-  - {fileID: 7461747586221045180, guid: f82ba1c9b769c484186d659ae00a2edf, type: 3}
-  - {fileID: 634048188913299686, guid: ee26051b4c8236247b327d698b81fd03, type: 3}
-  - {fileID: 1435937685473582064, guid: 7dcc187ed85ee7649b6847941c2da8bf, type: 3}
-  - {fileID: 8351826580578051610, guid: b76ec0b40e2ee6c4ba01585209abd317, type: 3}
-  - {fileID: 1184017159033276870, guid: c6e89c3bc0dc91e48812622023d62148, type: 3}
-  - {fileID: 7508029393705237503, guid: d8e9d77b65b5100439f28ee2e0c7036d, type: 3}
-  - {fileID: 8919505352254758122, guid: 7d95f7d0bb726ae439695d8bc7088fa6, type: 3}
-  - {fileID: 4766128873466078421, guid: 2356d065666bb7b4fa86d71a99e243f6, type: 3}
-  - {fileID: 5017525980673720201, guid: bd378c0da639c1846b4d2c04501e5320, type: 3}
-  - {fileID: 7845167737399477044, guid: eace3e7a0789d6b4391c3f73d5a2f926, type: 3}
-  - {fileID: 1405829710412752362, guid: dd4f823e979ecc444839bb77d0be87a4, type: 3}
-  - {fileID: 8225449553715583887, guid: 24fd20270a1dbb04e9fb1b14eaa7be6d, type: 3}
-  - {fileID: 664850544125264837, guid: cea08008a196e68429d7e52ba9c8a712, type: 3}
-  - {fileID: 4900667119478935562, guid: a4dd391ccab83534893a9a5e4cab419e, type: 3}
-  - {fileID: 6771439850323929658, guid: f4f0962515f991a44b500f9d56cf880c, type: 3}
-  width: 10
-  height: 10
+  - {fileID: 7068805397515020578, guid: 9be5b123daa4701419de685149a19761, type: 3}
+  - {fileID: 5336994291540823930, guid: 79557a86900a9cc4a881c34e6ee82d70, type: 3}
+  - {fileID: 6152209569062342471, guid: 8c255b3ac5cdc254699ebf5a856d292b, type: 3}
+  - {fileID: 5581635767245024255, guid: 2c686a688ac35704ab1b901bd594f6fd, type: 3}
+  - {fileID: 8093879503275589245, guid: b0cfb641dbf08494a893f908727ec4f4, type: 3}
+  numColumnasGeneradas: 30
+  separacionColumnas: 1
+  repeticiones: 3
+  ordenMarkov: 2
 --- !u!4 &1760982477
 Transform:
   m_ObjectHideFlags: 0

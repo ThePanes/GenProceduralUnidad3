@@ -1,31 +1,47 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class Lab3 : MonoBehaviour
 {
     public List<List<int>> matriz = new List<List<int>>();
+    public List<List<int>> columnas = new List<List<int>>();
     public float offsetX = 0f;
     public float offsetY = 0f;
     public GameObject[] prefabs;
 
-    private Dictionary<int, Dictionary<int, int>> transiciones = new Dictionary<int, Dictionary<int, int>>();
 
-    public int anchoGenerado = 10;
-    public int altoGenerado = 10;
-    public int cantidadLaberintos = 3;
-    public float separacionLaberintos = 15f;
+
+    public int numColumnasGeneradas = 30; 
+    public float separacionColumnas = 1f;
+    public int repeticiones = 3;
+
+    public int ordenMarkov = 2;
+    Dictionary<string, List<List<int>>> modeloMarkov = new Dictionary<string, List<List<int>>>();
+
 
     void Start()
     {
         LeerArchivo("matriz");
+        GuardarColumnas(); 
+        MostrarColumnasPorConsola(); 
         GenerarMapaInicial();
-        AprenderTransiciones();
 
-        for (int i = 0; i < cantidadLaberintos; i++)
+
+
+        for (int i = 0; i < repeticiones; i++)
         {
-            int[,] nuevoMapa = GenerarNuevoMapa();
-            InstanciarMapa(nuevoMapa, i);
+            offsetX += 40;
+
+            ConstruirModeloMarkov();
+            var columnasGeneradas = GenerarMapaNuevoMarkov();
+            if (columnasGeneradas.Count == 0) break;
+
+            var nuevaMatriz = TransponerMatriz(columnasGeneradas);
+            ActualizarMatriz(nuevaMatriz);
         }
+
+
     }
 
     void LeerArchivo(string nombreArchivo)
@@ -50,138 +66,6 @@ public class Lab3 : MonoBehaviour
 
             matriz.Add(fila);
         }
-    }
-
-    void AprenderTransiciones()
-    {
-        for (int y = 0; y < matriz.Count; y++)
-        {
-            for (int x = 0; x < matriz[y].Count; x++)
-            {
-                int actual = matriz[y][x];
-                if (actual == 0) continue;
-
-                // vecinos cardinales
-                int[] dx = { 1, -1, 0, 0 };
-                int[] dy = { 0, 0, 1, -1 };
-
-                for (int d = 0; d < 4; d++)
-                {
-                    int nx = x + dx[d];
-                    int ny = y + dy[d];
-                    if (ny < 0 || ny >= matriz.Count || nx < 0 || nx >= matriz[ny].Count)
-                        continue;
-
-                    int vecino = matriz[ny][nx];
-                    if (vecino == 0) continue;
-
-                    if (!transiciones.ContainsKey(actual))
-                        transiciones[actual] = new Dictionary<int, int>();
-
-                    if (!transiciones[actual].ContainsKey(vecino))
-                        transiciones[actual][vecino] = 0;
-
-                    transiciones[actual][vecino]++;
-                }
-            }
-        }
-
-        Debug.Log($"Modelo de Markov aprendido con {transiciones.Count} patrones base.");
-    }
-
-    int[,] GenerarNuevoMapa()
-    {
-        int[,] nuevo = new int[altoGenerado, anchoGenerado];
-
-        // Elegir tile inicial aleatorio
-        List<int> claves = new List<int>(transiciones.Keys);
-        int tileActual = claves[Random.Range(0, claves.Count)];
-        nuevo[0, 0] = tileActual;
-
-        for (int y = 0; y < altoGenerado; y++)
-        {
-            for (int x = 0; x < anchoGenerado; x++)
-            {
-                if (x == 0 && y == 0) continue;
-
-                int vecinoIzq = x > 0 ? nuevo[y, x - 1] : 0;
-                int vecinoArr = y > 0 ? nuevo[y - 1, x] : 0;
-
-                int siguiente = ObtenerSiguientePorProbabilidad(vecinoIzq, vecinoArr);
-                nuevo[y, x] = siguiente;
-            }
-        }
-
-        return nuevo;
-    }
-
-    int ObtenerSiguientePorProbabilidad(int izq, int arr)
-    {
-        // Si ambos son válidos, combinamos sus transiciones
-        Dictionary<int, float> pesos = new Dictionary<int, float>();
-
-        AgregarPesosDesdeVecino(izq, ref pesos, 1.0f);
-        AgregarPesosDesdeVecino(arr, ref pesos, 0.8f);
-
-        if (pesos.Count == 0)
-        {
-            List<int> claves = new List<int>(transiciones.Keys);
-            return claves[Random.Range(0, claves.Count)];
-        }
-
-        // selección ponderada
-        float total = 0;
-        foreach (var kv in pesos)
-            total += kv.Value;
-
-        float r = Random.Range(0f, total);
-        float acum = 0;
-        foreach (var kv in pesos)
-        {
-            acum += kv.Value;
-            if (r <= acum)
-                return kv.Key;
-        }
-
-        return 0;
-    }
-
-    void AgregarPesosDesdeVecino(int vecino, ref Dictionary<int, float> acumulado, float factor)
-    {
-        if (vecino == 0 || !transiciones.ContainsKey(vecino)) return;
-
-        foreach (var kv in transiciones[vecino])
-        {
-            // Aumentamos el peso (para marcar más los patrones)
-            float peso = Mathf.Pow(kv.Value, 1.5f) * factor;
-
-            if (!acumulado.ContainsKey(kv.Key))
-                acumulado[kv.Key] = 0;
-
-            acumulado[kv.Key] += peso;
-        }
-    }
-
-    void InstanciarMapa(int[,] mapa, int indice)
-    {
-        float desplazamientoX = indice * (anchoGenerado + separacionLaberintos);
-
-        for (int y = 0; y < mapa.GetLength(0); y++)
-        {
-            for (int x = 0; x < mapa.GetLength(1); x++)
-            {
-                int id = mapa[y, x];
-                if (id == 0) continue;
-
-                GameObject prefab = BuscarPrefabPorID(id);
-                if (prefab == null) continue;
-
-                Vector3 pos = new Vector3((x * 1f) + offsetX + desplazamientoX, 0, (-y * 1f) + offsetY);
-                Instantiate(prefab, pos, prefab.transform.rotation, transform);
-            }
-        }
-
-        Debug.Log($"Laberinto #{indice + 1} generado.");
     }
 
     GameObject BuscarPrefabPorID(int id)
@@ -218,6 +102,162 @@ public class Lab3 : MonoBehaviour
         }
 
         Debug.Log("Mapa generado correctamente");
+    }
+
+
+    void GuardarColumnas()
+    {
+        if (matriz.Count == 0) return;
+
+        int numColumnas = matriz[0].Count;
+        columnas.Clear();
+
+        for (int x = 0; x < numColumnas; x++)
+        {
+            List<int> columna = new List<int>();
+            for (int y = 0; y < matriz.Count; y++)
+            {
+                if (x < matriz[y].Count)
+                    columna.Add(matriz[y][x]);
+            }
+            columnas.Add(columna);
+        }
+
+        Debug.Log($"Se guardaron {columnas.Count} columnas");
+    }
+
+    void MostrarColumnasPorConsola()
+    {
+        for (int i = 0; i < columnas.Count; i++)
+        {
+            string contenido = string.Join(", ", columnas[i]);
+            Debug.Log($"Columna {i}: [{contenido}]");
+        }
+    }
+
+
+    List<List<int>> GenerarMapaNuevoMarkov()
+    {
+        if (modeloMarkov.Count == 0)
+        {
+            Debug.LogWarning("El modelo de Markov no está construido.");
+            return new List<List<int>>();
+        }
+
+        List<List<int>> nuevoMapa = new List<List<int>>();
+
+        // Semilla inicial: tomamos las primeras N columnas del mapa original
+        for (int i = 0; i < ordenMarkov && i < columnas.Count; i++)
+            nuevoMapa.Add(new List<int>(columnas[i]));
+
+        for (int i = 0; i < numColumnasGeneradas; i++)
+        {
+            // Obtenemos el contexto actual
+            if (nuevoMapa.Count < ordenMarkov) break;
+            var contexto = nuevoMapa.Skip(nuevoMapa.Count - ordenMarkov).Take(ordenMarkov).ToList();
+
+            string clave = string.Join("|", contexto.Select(c => string.Join(",", c)));
+
+            if (!modeloMarkov.ContainsKey(clave))
+            {
+                // Si no hay transición, reiniciamos con un contexto aleatorio
+                var entradaAleatoria = modeloMarkov.ElementAt(Random.Range(0, modeloMarkov.Count));
+                clave = entradaAleatoria.Key;
+                Debug.Log($"Transición no encontrada, se eligió un nuevo contexto aleatorio: {clave}");
+            }
+
+
+            var posibles = modeloMarkov[clave];
+
+            // Escogemos aleatoriamente entre las opciones aprendidas
+            var siguiente = posibles[Random.Range(0, posibles.Count)];
+            nuevoMapa.Add(new List<int>(siguiente));
+        }
+
+        // --- Instanciación ---
+        float inicioX = matriz[0].Count * separacionColumnas + offsetX + 2f;
+        for (int x = 0; x < nuevoMapa.Count; x++)
+        {
+            List<int> columna = nuevoMapa[x];
+            for (int y = 0; y < columna.Count; y++)
+            {
+                int id = columna[y];
+                GameObject prefab = BuscarPrefabPorID(id);
+                if (prefab == null) continue;
+
+                Vector3 pos = new Vector3(inicioX + x * separacionColumnas, 0, (-y * 1f) + (offsetY + 20));
+                Instantiate(prefab, pos, prefab.transform.rotation, transform);
+            }
+        }
+
+        Debug.Log("Mapa nuevo generado con modelo de Markov.");
+        return nuevoMapa;
+    }
+
+
+    void ActualizarMatriz(List<List<int>> nuevaMatriz)
+    {
+        matriz = nuevaMatriz;
+        columnas.Clear();
+
+        int numColumnas = matriz[0].Count;
+        for (int x = 0; x < numColumnas; x++)
+        {
+            List<int> columna = new List<int>();
+            for (int y = 0; y < matriz.Count; y++)
+            {
+                if (x < matriz[y].Count)
+                    columna.Add(matriz[y][x]);
+            }
+            columnas.Add(columna);
+        }
+
+        Debug.Log("Matriz y columnas actualizadas para la siguiente iteración.");
+    }
+
+    List<List<int>> TransponerMatriz(List<List<int>> columnas)
+    {
+        if (columnas == null || columnas.Count == 0)
+            return new List<List<int>>();
+
+        int alto = columnas[0].Count;
+        int ancho = columnas.Count;
+
+        List<List<int>> nueva = new List<List<int>>();
+
+        for (int y = 0; y < alto; y++)
+        {
+            List<int> fila = new List<int>();
+            for (int x = 0; x < ancho; x++)
+            {
+                fila.Add(columnas[x][y]);
+            }
+            nueva.Add(fila);
+        }
+
+        return nueva;
+    }
+
+    void ConstruirModeloMarkov()
+    {
+        modeloMarkov.Clear();
+        int n = ordenMarkov;
+
+        for (int i = 0; i < columnas.Count - n; i++)
+        {
+            // contexto: las últimas n columnas
+            string clave = string.Join("|", columnas.Skip(i).Take(n).Select(c => string.Join(",", c)));
+
+            // columna siguiente
+            var siguiente = columnas[i + n];
+
+            if (!modeloMarkov.ContainsKey(clave))
+                modeloMarkov[clave] = new List<List<int>>();
+
+            modeloMarkov[clave].Add(siguiente);
+        }
+
+        Debug.Log($"Modelo de Markov construido con {modeloMarkov.Count} estados (orden {ordenMarkov}).");
     }
 
 }
